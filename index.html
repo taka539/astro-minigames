@@ -7,7 +7,7 @@
 <style>
   :root { --bg:#0b1020; --fg:#e8f1ff; --muted:#a9b6d3; --acc:#88aaff; --good:#35d07f; --bad:#ff6b6b; --btn:#1c2b4b; }
   html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans JP",sans-serif;touch-action:manipulation}
-  /* 前後関係：UI > canvas > 背景 */
+  /* 前後関係：UI > canvas */
   #ui{position:fixed;inset:0;pointer-events:auto;z-index:10;}
   .hidden{display:none !important;}
   canvas{position:fixed;inset:0;z-index:0 !important;pointer-events:none !important;}
@@ -27,14 +27,15 @@
   .stick .knob{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:#20325faa;border:1px solid #3a4f86}
   .rightpad{position:absolute;right:18px;bottom:18px;display:flex;flex-direction:column;gap:10px}
 
-  /* JS無効時の警告 */
-  noscript .ns-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000c;color:#fff;font-size:18px;z-index:9999}
+  /* イントロ（説明）用パネル */
+  .panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,92vw);
+         background:#101a36;border:1px solid #2c3b66;border-radius:16px;padding:16px}
+  .panel h2{margin:0 0 8px}
+  .panel ul{margin:6px 0 0 18px; color:var(--muted)}
 </style>
 </head>
 <body>
-<noscript><div class="ns-wrap">このページはJavaScriptが必要です。ブラウザ設定で有効にしてください。</div></noscript>
-
-<!-- p5.js（会場オフラインならローカル p5.min.js に差し替え） -->
+<!-- p5.js -->
 <script src="https://cdn.jsdelivr.net/npm/p5@1.9.2/lib/p5.min.js"></script>
 
 <div id="ui">
@@ -44,11 +45,11 @@
     <span id="status" style="margin-left:auto;color:#c7d4ff"></span>
   </div>
 
-  <!-- メニュー（初期表示で必ず見える） -->
+  <!-- メニュー（初期表示） -->
   <div id="menu">
     <div class="card" style="margin-top:72px">
       <h1>宇宙ミニゲーム・コレクション</h1>
-      <p>スマホでもOK。遊びたいゲームを選んでね。</p>
+      <p>スマホでもOK。まずはゲームを選択 → 「Start」で開始。</p>
       <div class="grid" style="margin-top:8px">
         <button class="b" id="goBH">① ブラックホール脱出</button>
         <button class="b" id="goCON">② 星座つなぎ</button>
@@ -57,6 +58,19 @@
       </div>
       <p class="foot">操作：左下スティック or 端末の傾き（iOSは下の許可が必要）</p>
       <button class="b" id="askMotion">加速度センサーを許可（iOS）</button>
+    </div>
+  </div>
+
+  <!-- イントロ（説明＋Start） -->
+  <div id="intro" class="panel hidden">
+    <h2 id="introTitle">タイトル</h2>
+    <p id="introText">説明テキスト</p>
+    <ul id="introOps">
+      <!-- ここに操作説明の箇条書きを差し込む -->
+    </ul>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+      <button class="b" id="btnBack">戻る</button>
+      <button class="b primary" id="btnStart">Start</button>
     </div>
   </div>
 
@@ -71,16 +85,31 @@
 <script>
 /* ========= 共通：状態・入力 ========= */
 let W=window.innerWidth, H=window.innerHeight;
-let current='menu';
+let current='menu';           // 'menu' | 'intro' | 'bh' | 'con' | 'dop' | 'len'
+let pendingGame=null;         // イントロで選択中のゲーム
+
 const statusEl=document.getElementById('status');
 const menuEl=document.getElementById('menu');
 const rightpadEl=document.getElementById('rightpad');
 
+const introEl=document.getElementById('intro');
+const introTitle=document.getElementById('introTitle');
+const introText=document.getElementById('introText');
+const introOps=document.getElementById('introOps');
+
 document.getElementById('btnMenu').onclick=()=>setState('menu');
-document.getElementById('goBH').onclick = ()=>startBH();
-document.getElementById('goCON').onclick= ()=>startCON();
-document.getElementById('goDOP').onclick= ()=>startDOP();
-document.getElementById('goLEN').onclick= ()=>startLEN();
+document.getElementById('goBH').onclick = ()=>openIntro('bh');
+document.getElementById('goCON').onclick= ()=>openIntro('con');
+document.getElementById('goDOP').onclick= ()=>openIntro('dop');
+document.getElementById('goLEN').onclick= ()=>openIntro('len');
+
+document.getElementById('btnBack').onclick = ()=>setState('menu');
+document.getElementById('btnStart').onclick= ()=>{
+  if(pendingGame==='bh') startBH();
+  else if(pendingGame==='con') startCON();
+  else if(pendingGame==='dop') startDOP();
+  else if(pendingGame==='len') startLEN();
+};
 
 document.getElementById('askMotion').onclick= async ()=>{
   try{
@@ -95,10 +124,50 @@ document.getElementById('askMotion').onclick= async ()=>{
 
 function setState(s){
   current=s;
-  menuEl.classList.toggle('hidden', s!=='menu');
+  const isMenu = (s==='menu');
+  const isIntro= (s==='intro');
+  menuEl.classList.toggle('hidden', !isMenu);
+  introEl.classList.toggle('hidden', !isIntro);
   rightpadEl.classList.toggle('hidden', s!=='dop');
-  menuEl.style.pointerEvents  = (s==='menu') ? 'auto' : 'none';
+  // クリック可否
+  menuEl.style.pointerEvents   = isMenu ? 'auto' : 'none';
+  introEl.style.pointerEvents  = isIntro? 'auto' : 'none';
   rightpadEl.style.pointerEvents = (s==='dop') ? 'auto' : 'none';
+}
+
+/* ========= イントロ画面の内容 ========= */
+function openIntro(kind){
+  pendingGame = kind;
+  const presets = {
+    bh: {
+      title: '① ブラックホール脱出',
+      text:  '中心のブラックホールに落ちないように、宇宙船を操作して生き延びよう。',
+      ops:  ['左下スティック：推力方向', '端末の傾き：推力方向（iOSは許可が必要）', '壁でバウンドします', '吸い込まれたら終了']
+    },
+    con:{
+      title: '② 星座つなぎ（オリオン）',
+      text:  '表示される点（星）を順にタップして線で結び、星座の形を完成させよう。',
+      ops:  ['画面タップ：星を選択', '輪っかで示された星が次の正解', '全部つなぐと完成']
+    },
+    dop:{
+      title: '③ ドップラー当て',
+      text:  '流れてくる「星」の色から、近づく（青方）か遠ざかる（赤方）かを当てよう。',
+      ops:  ['右下ボタン：近づく/遠ざかる を選択', '正解でスコア＋1、ミスでライフ−1', 'ライフが0で終了']
+    },
+    len:{
+      title: '④ 重力レンズ迷路',
+      text:  '青い「銀河」（レンズ）をドラッグして配置し、光をゴールへ曲げよう。',
+      ops:  ['青丸ドラッグ：レンズ位置を動かす', '光は右へ進み、レンズ近くで曲がる', 'ゴールに届けばクリア']
+    }
+  };
+  const c = presets[kind];
+  introTitle.textContent = c.title;
+  introText.textContent  = c.text;
+  introOps.innerHTML     = '';
+  c.ops.forEach(t=>{
+    const li=document.createElement('li'); li.textContent=t; introOps.appendChild(li);
+  });
+  setState('intro');
 }
 
 /* ========= 仮想スティック ========= */
@@ -157,7 +226,7 @@ let sketch=(p)=>{
   p.windowResized=()=>{ W=window.innerWidth; H=window.innerHeight; p.resizeCanvas(W,H); bgStars=[]; };
   p.draw=()=>{
     p.background(10,16,36);
-    if(current==='menu'){ drawStarsBG(p); }
+    if(current==='menu' || current==='intro'){ drawStarsBG(p); }
     else if(current==='bh'){ drawBH(p); }
     else if(current==='con'){ drawCON(p); }
     else if(current==='dop'){ drawDOP(p); }
