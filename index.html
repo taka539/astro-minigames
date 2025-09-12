@@ -7,19 +7,18 @@
 <style>
   :root { --bg:#0b1020; --fg:#e8f1ff; --muted:#a9b6d3; --acc:#88aaff; --good:#35d07f; --bad:#ff6b6b; --btn:#1c2b4b; }
   html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans JP",sans-serif;touch-action:manipulation}
-  /* UIは前面、キャンバスは背面に固定 */
+  /* 前後関係：UI > canvas > 背景 */
   #ui{position:fixed;inset:0;pointer-events:auto;z-index:10;}
   .hidden{display:none !important;}
-  canvas{position:fixed;inset:0;z-index:-1 !important;pointer-events:none !important;}
+  canvas{position:fixed;inset:0;z-index:0 !important;pointer-events:none !important;}
 
-  /* 使うUIスタイル（必要最小限） */
   .topbar{position:absolute;left:8px;right:8px;top:8px;display:flex;gap:8px;align-items:center}
   .b{background:#16213a;color:var(--fg);border:1px solid #2c3b66;border-radius:10px;padding:10px 12px;font-size:14px}
   .b:active{transform:translateY(1px)}
   .primary{background:var(--btn)}
   .good{background:var(--good);color:#062410;border:none}
   .bad{background:var(--bad);color:#2b0000;border:none}
-  .card{width:min(560px,92vw);background:#101a36;border:1px solid #2c3b66;border-radius:16px;padding:14px}
+  .card{width:min(560px,92vw);background:#101a36;border:1px solid #2c3b66;border-radius:16px;padding:14px;margin:0 auto}
   h1{margin:0 0 6px;font-size:22px}
   p{margin:6px 0;color:var(--muted);line-height:1.5}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -27,10 +26,15 @@
   .stick{position:absolute;bottom:18px;left:18px;width:120px;height:120px;border-radius:50%;background:#0c1530aa;border:1px solid #2c3b66;touch-action:none}
   .stick .knob{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:#20325faa;border:1px solid #3a4f86}
   .rightpad{position:absolute;right:18px;bottom:18px;display:flex;flex-direction:column;gap:10px}
+
+  /* JS無効時の警告 */
+  noscript .ns-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000c;color:#fff;font-size:18px;z-index:9999}
 </style>
 </head>
 <body>
-<!-- p5.js（会場オフラインならローカルに差し替え） -->
+<noscript><div class="ns-wrap">このページはJavaScriptが必要です。ブラウザ設定で有効にしてください。</div></noscript>
+
+<!-- p5.js（会場オフラインならローカル p5.min.js に差し替え） -->
 <script src="https://cdn.jsdelivr.net/npm/p5@1.9.2/lib/p5.min.js"></script>
 
 <div id="ui">
@@ -40,9 +44,9 @@
     <span id="status" style="margin-left:auto;color:#c7d4ff"></span>
   </div>
 
-  <!-- メニュー -->
+  <!-- メニュー（初期表示で必ず見える） -->
   <div id="menu">
-    <div class="card">
+    <div class="card" style="margin-top:72px">
       <h1>宇宙ミニゲーム・コレクション</h1>
       <p>スマホでもOK。遊びたいゲームを選んでね。</p>
       <div class="grid" style="margin-top:8px">
@@ -91,10 +95,8 @@ document.getElementById('askMotion').onclick= async ()=>{
 
 function setState(s){
   current=s;
-  // 表示/非表示をクラスで一元管理
   menuEl.classList.toggle('hidden', s!=='menu');
   rightpadEl.classList.toggle('hidden', s!=='dop');
-  // UIのクリック可否も明示
   menuEl.style.pointerEvents  = (s==='menu') ? 'auto' : 'none';
   rightpadEl.style.pointerEvents = (s==='dop') ? 'auto' : 'none';
 }
