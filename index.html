@@ -5,31 +5,16 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
 <title>宇宙ミニゲーム・コレクション</title>
 <style>
-  :root { --bg:#0b1020; --fg:#e8f1ff; --muted:#a9b6d3; --acc:#88aaff; --good:#35d07f; --bad:#ff6b6b; --btn:#1c2b4b; }
-  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans JP",sans-serif;}
-  -  #ui{position:fixed;inset:0;pointer-events:none;}
-  +  #ui{position:fixed;inset:0;pointer-events:none; z-index:10;}
-  .topbar{position:absolute;left:8px;right:8px;top:8px;display:flex;gap:8px;align-items:center;pointer-events:auto;}
-  .b{background:#16213a;color:var(--fg);border:1px solid #2c3b66;border-radius:10px;padding:10px 12px;font-size:14px}
-  .b:active{transform:translateY(1px)}
-  .primary{background:var(--btn)}
-  .ghost{background:transparent;border-color:#3b4d80}
-  .good{background:var(--good);color:#062410;border:none}
-  .bad{background:var(--bad);color:#2b0000;border:none}
-  .panel{position:absolute;inset:auto 8px 8px 8px;background:rgba(7,12,28,.85);border:1px solid #2c3b66;border-radius:12px;padding:12px;pointer-events:auto}
-  #menu{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;pointer-events:auto}
-  .card{width:min(560px,92vw);background:#101a36;border:1px solid #2c3b66;border-radius:16px;padding:14px}
-  h1{margin:0 0 6px;font-size:22px}
-  p{margin:6px 0;color:var(--muted);line-height:1.5}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .foot{opacity:.8;font-size:12px;margin-top:8px}
-  .stick{position:absolute;bottom:18px;left:18px;width:120px;height:120px;border-radius:50%;background:#0c1530aa;border:1px solid #2c3b66;pointer-events:auto;touch-action:none}
-  .stick .knob{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:#20325faa;border:1px solid #3a4f86}
-  .rightpad{position:absolute;right:18px;bottom:18px;display:flex;flex-direction:column;gap:10px;pointer-events:auto}
-  .big{font-size:16px;padding:14px 18px;border-radius:12px}
-  a{color:var(--acc);text-decoration:none}
-  details{margin:8px 0}
-</style>
+ <style>
+   :root { /* 省略 */ }
+   html,body{ /* 省略 */ }
+-  #ui{position:fixed;inset:0;pointer-events:none; z-index:10;}
++  #ui{position:fixed;inset:0;pointer-events:none; z-index:10;}
++  /* hidden属性だけに頼らず、classで確実に消す */
++  .hidden{ display:none !important; }
++  /* 念のためキャンバスは背面 */
++  canvas{ position:fixed; inset:0; z-index:0 !important; }
+ </style>
 </head>
 <body>
 <!-- p5.js CDN（会場がオフラインならローカルに差し替え） -->
@@ -47,7 +32,7 @@
   <div id="menu" hidden>
     <div class="card">
       <h1>宇宙ミニゲーム・コレクション</h1>
-      <p>スマホでもOK。文化祭用に設計。遊んだあとに「解説」で科学的な背景を読めます。</p>
+      <p>スマホでもOK。</p>
       <div class="grid" style="margin-top:8px">
         <button class="b big" id="goBH">① ブラックホール脱出</button>
         <button class="b big" id="goCON">② 星座つなぎ</button>
@@ -119,12 +104,21 @@ document.getElementById('askMotion').onclick = async ()=>{
   }catch(e){ alert('許可リクエストでエラー: '+e); }
 };
 
-function setState(s){
-  current = s;
-  menuEl.hidden = (s!=='menu');
-  aboutEl.hidden = (s!=='about');
-  rightpadEl.hidden = (s!=='dop'); // ドップラーだけ選択ボタンを出す
-}
+ function setState(s){
+   current = s;
+-  menuEl.hidden = (s!=='menu');
+-  aboutEl.hidden = (s!=='about');
+-  rightpadEl.hidden = (s!=='dop'); // ドップラーだけ選択ボタンを出す
++  // 表示を class で切り替え
++  menuEl.classList.toggle('hidden', s!=='menu');
++  aboutEl.classList.toggle('hidden', s!=='about');
++  rightpadEl.classList.toggle('hidden', s!=='dop'); // ドップラーだけ選択ボタンを出す
++  // クリック可否も同時に切替（前面に残って当たり判定を邪魔しないように）
++  menuEl.style.pointerEvents  = (s==='menu')  ? 'auto' : 'none';
++  aboutEl.style.pointerEvents = (s==='about') ? 'auto' : 'none';
++  rightpadEl.style.pointerEvents = (s==='dop') ? 'auto' : 'none';
+ }
+
 
 let joy = {active:false, base:null, knob:null, dx:0, dy:0};
 (function initStick(){
@@ -228,7 +222,36 @@ function setupBH(p){
   bh = reset();
   bh.reset = ()=>Object.assign(bh, reset());
 }
-function startBH(){ setState('bh'); bh.reset(); }
+ function startBH(){ 
+-  setState('bh'); bh.reset(); 
++  setState('bh'); 
++  bh.reset();
++  // 念のため
++  menuEl.classList.add('hidden'); menuEl.style.pointerEvents='none';
++  aboutEl.classList.add('hidden'); aboutEl.style.pointerEvents='none';
+ }
+ function startCON(){ 
+-  setState('con'); con.reset(); 
++  setState('con'); 
++  con.reset();
++  menuEl.classList.add('hidden'); menuEl.style.pointerEvents='none';
++  aboutEl.classList.add('hidden'); aboutEl.style.pointerEvents='none';
+ }
+ function startDOP(){ 
+-  setState('dop'); dop.reset(); spawnDOP(); 
++  setState('dop'); 
++  dop.reset(); spawnDOP();
++  menuEl.classList.add('hidden'); menuEl.style.pointerEvents='none';
++  aboutEl.classList.add('hidden'); aboutEl.style.pointerEvents='none';
+ }
+ function startLEN(){ 
+-  setState('len'); lenz.reset(); 
++  setState('len'); 
++  lenz.reset();
++  menuEl.classList.add('hidden'); menuEl.style.pointerEvents='none';
++  aboutEl.classList.add('hidden'); aboutEl.style.pointerEvents='none';
+ }
+
 function drawBH(p){
   // 中央ブラックホール描画
   p.push();
@@ -535,4 +558,5 @@ setState('menu');
 </script>
 </body>
 </html>
+
 
