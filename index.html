@@ -129,29 +129,30 @@ function setState(s){
  rightpadEl.style.pointerEvents = (s==='dop') ? 'auto' : 'none';
 }
 /* ========= イントロ画面 ========= */
-function openIntro(kind){
- pendingGame = kind;
- const presets = {
-   bh: {title:'① ブラックホール脱出',
-        text:'中心のブラックホールに落ちないよう、宇宙船で生き延びよう。',
-        ops:['左下スティック：推力方向','端末の傾き：推力方向（iOSは許可が必要）','壁でバウンド','落ちたら終了']},
-   con:{title:'② 星座つなぎ',
-        text:'点（星）を順にタップして線で結び、星座を完成させよう。',
-        ops:['輪っかの星が次の正解','全部つなぐと完成']},
-   dop:{title:'③ ドップラー当て',
-        text:'星の色で、近づく（青）か遠ざかる（赤）かを当てよう。',
-        ops:['右下ボタンで判定','正解+1 / ミス-1','ライフ0で終了、右下「もう一回」で再開']},
-   len:{title:'④ 重力レンズ迷路',
-        text:'青い銀河（レンズ）をドラッグで動かし、光をゴールへ曲げよう。',
-        ops:['青丸ドラッグで位置調整','光は右へ進み、近くで曲がる','ゴールに届けばクリア']}
- };
- const c = presets[kind];
- introTitle.textContent = c.title;
- introText.textContent  = c.text;
- introOps.innerHTML     = '';
- c.ops.forEach(t=>{ const li=document.createElement('li'); li.textContent=t; introOps.appendChild(li); });
- setState('intro');
-}
+window.openIntro = function(kind){
+  pendingGame = kind;
+  const presets = {
+    bh: {title:'① ブラックホール脱出',
+         text:'中心のブラックホールに落ちないよう、宇宙船で生き延びよう。',
+         ops:['左下スティック：推力方向','端末の傾き：推力方向（iOSは許可）','壁でバウンド','落ちたら終了']},
+    con:{title:'② 星座つなぎ',
+         text:'点（星）を順にタップして線で結び、星座を完成させよう。',
+         ops:['輪っかの星が次の正解','全部つなぐと完成']},
+    dop:{title:'③ ドップラー当て',
+         text:'星の色で、近づく（青）か遠ざかる（赤）かを当てよう。',
+         ops:['右下ボタンで判定','正解+1 / ミス-1','ライフ0で終了、「もう一回」で再開']},
+    len:{title:'④ 重力レンズ迷路',
+         text:'青い銀河（レンズ）をドラッグで動かし、光をゴールへ曲げよう。',
+         ops:['青丸ドラッグで位置調整','光は右へ進み、近くで曲がる','ゴールに届けばクリア']}
+  };
+  const c = presets[kind];
+  introTitle.textContent = c.title;
+  introText.textContent  = c.text;
+  introOps.innerHTML     = '';
+  c.ops.forEach(t=>{ const li=document.createElement('li'); li.textContent=t; introOps.appendChild(li); });
+  setState('intro');
+};
+
 /* ========= 仮想スティック ========= */
 let joy={active:false, base:null, knob:null, dx:0, dy:0};
 (function initStick(){
@@ -383,4 +384,5 @@ function drawLEN(p){
 </script>
 </body>
 </html>
+
 
