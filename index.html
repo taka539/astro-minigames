@@ -47,10 +47,10 @@
 <h1>宇宙ミニゲーム・コレクション</h1>
 <p>ゲームを選んで「Start」で開始。スマホ対応。</p>
 <div class="grid" style="margin-top:8px">
-<button class="b" id="goBH"  type="button">① ブラックホール脱出</button>
-<button class="b" id="goCON" type="button">② 星座つなぎ</button>
-<button class="b" id="goDOP" type="button">③ ドップラー当て</button>
-<button class="b" id="goLEN" type="button">④ 重力レンズ迷路</button>
+<button class="b" type="button" onclick="openIntro('bh')">① ブラックホール脱出</button>
+<button class="b" type="button" onclick="openIntro('con')">② 星座つなぎ</button>
+<button class="b" type="button" onclick="openIntro('dop')">③ ドップラー当て</button>
+<button class="b" type="button" onclick="openIntro('len')">④ 重力レンズ迷路</button>
 </div>
 <p class="foot">操作：左下スティック or 端末の傾き（iOSは許可が必要）</p>
 <button class="b" id="askMotion" type="button">加速度センサーを許可（iOS）</button>
@@ -383,3 +383,4 @@ function drawLEN(p){
 </script>
 </body>
 </html>
+
